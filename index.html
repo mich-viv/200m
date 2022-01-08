@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>200metri</title>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="shortcut icon" type="image/x-icon" href="docs/images/favicon.ico" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css" integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ==" crossorigin=""/>
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/4.3.1/materia/bootstrap.min.css">
+    <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js" integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew==" crossorigin=""></script>
+	<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+	<style>
+	
+	 #mapid{
+		width: 100%;
+		height: 700px;
+	 }
+	 
+	 h1{
+		text-align: center;
+		font-family: Segoe UI, sans-serif;
+	 }
+	 
+	 p{
+		text-align: center;
+		font-family: Segoe UI, sans-serif;
+	 }
+	 
+	 div#search input {
+		width: 200px;
+	 }
+	 
+	 div#results {
+		font-style: sans-serif;
+		color: black;
+		font-size: 100%;
+	 }
+	 
+	 ul {
+		list-style-type: none;
+    }
+	</style>
+</head>
+<body>
+<h1> CERCA UNA POSIZIONE POI CLICCA SULLA MAPPA PER SAPERE QUANTO DISTANTI SONO 200m DA CASA TUA</h1>
+<br>
+<br>
+<div id="mapid"></div>
+<br>
+<br>
+<div id="search">
+  <input type="text" name="addr" value="" id="addr" size="10" />
+  <button type="button" onclick="addr_search();">Cerca una posizione</button>
+  <div id="results"/>
+</div>
+<footer>
+	<hr>
+	<p>2020 - Beta version - Sviluppato da <a href="https://it.linkedin.com/in/michele-viviani-a25788120">michele viviani</a></p>
+</footer>
+<script>
+	
+	var lat_p;
+	var lon_p;
+	var position_mark = {};
+	var position_circle = {};
+	
+	//inizialmente impostata sulle coordinate di padova, piazzale stazione
+	
+	var mymap = L.map('mapid').setView([45.4161, 11.8828], 17);
+	
+	function addr_search() {
+	
+		var inp = document.getElementById("addr");
+		$.getJSON('http://nominatim.openstreetmap.org/search?format=json&limit=5&q=' + inp.value, function(data) {
+		
+		var items = [];
+		
+		items.push("<table class='table table-sm'><tbody>");
+		
+		var i = 0;
+		
+		$.each(data, function(key, val) {
+			items.push("<tr><th scope='row'>" + (i+1) + "</th><td><a href='#' onclick='chooseAddr(" + val.lat + ", " + val.lon + ");return false;'>" + val.display_name + '</a></td></tr>');
+			i++;
+		});
+			    
+		$('#results').empty();
+			if (items.length != 0) {
+				
+				$('<p>', { html: "RISULTATI RICERCA POSIZIONE:" }).appendTo('#results');
+				$('<ul/>', {
+				
+				'class': 'my-new-list',
+					html: items.join('')
+				}).appendTo('#results');
+				
+			} else {
+					
+				$('<p>', { html: "NESSUNA POSIZIONE TROVATA" }).appendTo('#results');
+			
+			}//if-else
+		});
+	}//addr_search
+
+	function chooseAddr(lat, lng) {
+	  var location = new L.LatLng(lat, lng);
+	  mymap.panTo(location);
+	}//chooseAddr
+
+	L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw', {
+		maxZoom: 18,
+		attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, ' +
+			'<a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
+			'Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+		id: 'mapbox/streets-v11',
+		tileSize: 512,
+		zoomOffset: -1
+	}).addTo(mymap);
+
+	mymap.on('click', function(e) {
+		//alert("Lat, Lon : " + e.latlng.lat + ", " + e.latlng.lng);
+		lap_p = e.latlng.lat;
+		lon_p = e.latlng.lng;
+		
+		//elinima la posizione se riclicco sulla mappa
+		if((position_mark != undefined) && (position_circle != undefined)){
+			
+			mymap.removeLayer(position_mark);
+			mymap.removeLayer(position_circle);
+			
+		}//if
+		
+		position_mark = L.marker([lap_p, lon_p]).addTo(mymap);
+
+		position_circle = L.circle([lap_p, lon_p], {
+			color: 'red',
+			fillColor: '#f03',
+			fillOpacity: 0.5,
+			radius: 200
+		}).addTo(mymap);
+		
+    });
+    
+</script>
+</body>
+</html>
